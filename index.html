@@ -101,7 +101,8 @@
   <!-- INICIO -->
   <section id="home">
     <h1>Lectura de juego</h1>
-    <div class="sub" id="homeSub">Interior izquierdo · 4-3-3</div>
+    <div class="sub" id="homeSub">Elige tu posición · 4-3-3</div>
+    <div class="chips" id="posiciones"></div>
 
     <div class="stats">
       <div class="stat"><div class="big" id="stIQ">—</div><small>IQ táctico</small></div>
@@ -134,7 +135,7 @@
 
     <div class="card">
       <h3>Cómo se juega</h3>
-      <div class="situ">Ves una foto del partido desde arriba. Atacas hacia la <b>derecha</b>; tu banda izquierda está <b>arriba</b>. Tú eres el jugador amarillo. Lee la situación y <b>toca en la cancha</b>: a quién le pasas, a qué espacio corres o dónde te ubicas. Casi nunca hay una sola respuesta correcta: cada decisión tiene un puntaje y una explicación.</div>
+      <div class="situ">Ves una foto del partido desde arriba. Atacas hacia la <b>derecha</b>; tu banda izquierda está <b>arriba</b>. Tú eres el jugador amarillo (la posición que elegiste arriba). Lee la situación y <b>toca en la cancha</b>: a quién le pasas, a qué espacio corres o dónde te ubicas. Casi nunca hay una sola respuesta correcta: cada decisión tiene un puntaje y una explicación.</div>
       <div class="legend">
         <span><i style="background:#ffd23f"></i>Tú</span>
         <span><i style="background:#e8f4ff"></i>Tu equipo</span>
@@ -147,6 +148,7 @@
 
   <!-- JUEGO -->
   <section id="play" class="hidden">
+    <div class="sub" id="playPos" style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em"></div>
     <div class="topbar">
       <span id="progress">1 / 10</span>
       <span id="tags"></span>
@@ -203,10 +205,14 @@
 </div>
 
 <script src="scenarios.js"></script>
+<script src="scenarios-extremo.js"></script>
+<script src="scenarios-lateral.js"></script>
 <script>
 (function () {
   const D = window.TACTICA;
-  const ALL = D.scenarios;
+  let pos = D.posiciones[0];
+  let ALL = [];
+  function setPos(p) { pos = p; ALL = D.scenarios.filter(s => s.posicion === p.id); try { localStorage.setItem(KEY + "_pos", p.id); } catch (e) {} }
   const SVGNS = "http://www.w3.org/2000/svg";
   const $ = id => document.getElementById(id);
 
@@ -214,6 +220,7 @@
   const KEY = "tactica_ii_v1";
   let progress = { best: {}, played: 0 };
   try { const raw = localStorage.getItem(KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
+  try { const savedPos = localStorage.getItem(KEY + "_pos"); setPos(D.posiciones.find(p => p.id === savedPos) || D.posiciones[0]); } catch (e) { setPos(D.posiciones[0]); }
   function saveProgress() { try { localStorage.setItem(KEY, JSON.stringify(progress)); } catch (e) {} }
 
   // ---------- estado de sesión ----------
@@ -234,14 +241,16 @@
   }
   function fmt(p) { return p === null ? "—" : p + "%"; }
   function renderHome() {
-    $("homeSub").textContent = D.posicion + " · " + D.sistema;
+    $("homeSub").textContent = pos.desc + " · " + D.sistema;
+    $("posiciones").innerHTML = D.posiciones.map(p => '<button class="chip' + (p.id === pos.id ? " on" : "") + '" data-p="' + p.id + '">' + p.nombre + "</button>").join("");
+    $("posiciones").querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", () => { setPos(D.posiciones.find(p => p.id === ch.dataset.p)); renderHome(); }));
     $("stIQ").textContent = fmt(pct(ALL));
     $("stAtaque").textContent = fmt(pct(ALL.filter(s => s.fase === "ataque")));
     $("stDefensa").textContent = fmt(pct(ALL.filter(s => s.fase !== "ataque")));
     const n = filteredList().length;
     const seen = ALL.filter(s => progress.best[s.id] !== undefined).length;
     $("countInfo").textContent = n + " escenarios en este filtro · " + seen + " de " + ALL.length + " jugados";
-    $("verInfo").textContent = "Prototipo · " + ALL.length + " escenarios · " + D.posicion;
+    $("verInfo").textContent = "Prototipo · " + D.scenarios.length + " escenarios en total · " + ALL.length + " de " + pos.nombre.toLowerCase();
   }
   function filteredList() {
     if (filter === "todo") return ALL.slice();
@@ -321,6 +330,7 @@
     const P = $("players");
     positions = {};
     const team = Object.assign({}, D.base.team, s.team || {});
+    delete team[pos.rol];
     const rivals = Object.assign({}, D.base.rivals, s.rivals || {});
     for (const k in rivals) { positions["R:" + k] = rivals[k].slice(); player(P, "R:" + k, rivals[k][0], rivals[k][1], "rival"); }
     for (const k in team) { positions["T:" + k] = team[k].slice(); player(P, "T:" + k, team[k][0], team[k][1], "team", k); }
@@ -370,6 +380,7 @@
     renderScenario(current);
     $("progress").textContent = (session.idx + 1) + " / " + session.list.length;
     $("tags").innerHTML = '<span class="tag ' + current.fase + '">' + current.fase + "</span>";
+    $("playPos").textContent = pos.nombre;
     $("pts").innerHTML = session.mode === "partido"
       ? (session.streak >= 2 ? '<span class="streak">🔥 ' + session.streak + "</span> · " : "") + sumPoints() + " pts"
       : sumPoints() + " pts";

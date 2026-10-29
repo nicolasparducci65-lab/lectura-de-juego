@@ -1,5 +1,6 @@
 // ============================================================
-//  ESCENARIOS TÁCTICOS — Interior / extremo izquierdo (4-3-3)
+//  ESCENARIOS TÁCTICOS — base del juego + escenarios de Interior izquierdo (4-3-3)
+//  Los de otras posiciones viven en scenarios-<posicion>.js y se agregan con push().
 // ============================================================
 //  Sistema de coordenadas: cancha de 105 x 68 m.
 //    x: 0 = nuestro arco, 105 = arco rival (atacamos hacia la derecha)
@@ -14,12 +15,17 @@
 // ============================================================
 
 window.TACTICA = {
-  posicion: "Interior izquierdo",
   sistema: "4-3-3",
+  // Posiciones jugables. "rol" es la ficha de la formación base que el jugador reemplaza.
+  posiciones: [
+    { id: "interior", nombre: "Interior izquierdo", rol: "EI", desc: "Extremo que juega por dentro" },
+    { id: "extremo", nombre: "Extremo izquierdo", rol: "EI", desc: "Pegado a la banda, encara y centra" },
+    { id: "lateral", nombre: "Lateral izquierdo", rol: "LI", desc: "Defiende la banda y se suma al ataque" }
+  ],
   base: {
     team: {
       POR: [5, 34], LI: [26, 10], DCI: [22, 26], DCD: [22, 42], LD: [26, 58],
-      MCD: [40, 34], MI: [52, 24], MD: [52, 44], DC: [74, 34], ED: [68, 56]
+      MCD: [40, 34], MI: [52, 24], MD: [52, 44], EI: [66, 14], DC: [74, 34], ED: [66, 58]
     },
     rivals: {
       POR: [101, 34], LD: [84, 14], DCD: [88, 27], DCI: [88, 41], LI: [84, 54],
@@ -30,7 +36,7 @@ window.TACTICA = {
   scenarios: [
     // ---------------- ATAQUE CON BALÓN ----------------
     {
-      id: "a01", fase: "ataque", tipo: "pase", principio: "Amplitud",
+      id: "a01", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Amplitud",
       titulo: "El lateral que desborda",
       situacion: "Recibes en banda. El lateral rival te cierra de frente y su volante te tapa por dentro. Tu lateral izquierdo viene lanzado por fuera.",
       pregunta: "Tienes la pelota. ¿A dónde la juegas?",
@@ -47,7 +53,7 @@ window.TACTICA = {
       ideal: [[{ who: "T:LI", to: [86, 5] }, { who: "ball", to: [86, 6] }]]
     },
     {
-      id: "a02", fase: "ataque", tipo: "pase", principio: "Profundidad",
+      id: "a02", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Profundidad",
       titulo: "La ruptura del 9",
       situacion: "Recibes entre líneas y el central derecho sale a presionarte. El 9 ve el hueco que dejó y arranca a la espalda.",
       pregunta: "¿A dónde juegas el pase?",
@@ -64,7 +70,7 @@ window.TACTICA = {
       ideal: [[{ who: "T:DC", to: [92, 29] }, { who: "ball", to: [92, 30] }]]
     },
     {
-      id: "a03", fase: "ataque", tipo: "pase", principio: "Apoyo",
+      id: "a03", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Apoyo",
       titulo: "De espaldas y con marca encima",
       situacion: "Recibes de espaldas al arco pegado a la banda. El lateral rival está encima tuyo. El mediocentro se ofrece libre y de cara al juego.",
       pregunta: "¿Qué haces con la pelota?",
@@ -81,7 +87,7 @@ window.TACTICA = {
       ideal: [[{ who: "ball", to: [56, 31] }], [{ who: "you", to: [74, 26] }]]
     },
     {
-      id: "a04", fase: "ataque", tipo: "pase", principio: "Cambio de orientación",
+      id: "a04", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Cambio de orientación",
       titulo: "La defensa cargada a tu lado",
       situacion: "Conduces hacia dentro. Toda la defensa rival se desplazó hacia tu banda. El extremo derecho está completamente solo del otro lado.",
       pregunta: "¿A dónde juegas?",
@@ -98,7 +104,7 @@ window.TACTICA = {
       ideal: [[{ who: "ball", to: [72, 62] }], [{ who: "T:ED", to: [84, 58] }, { who: "ball", to: [84, 58] }]]
     },
     {
-      id: "a05", fase: "transicion", tipo: "conduccion", principio: "Fijar y pasar",
+      id: "a05", posicion: "interior", fase: "transicion", tipo: "conduccion", principio: "Fijar y pasar",
       titulo: "Dos contra uno en la contra",
       situacion: "Contragolpe. Conduces por banda y solo queda el lateral rival. Tu lateral izquierdo corre por fuera a tu lado.",
       pregunta: "Toca a dónde conduces o a quién pasas.",
@@ -115,7 +121,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [69, 10] }, { who: "ball", to: [70, 11] }, { who: "T:LI", to: [72, 3] }], [{ who: "R:LD", to: [71, 11] }, { who: "ball", to: [82, 4] }, { who: "T:LI", to: [82, 4] }]]
     },
     {
-      id: "a06", fase: "ataque", tipo: "pase", principio: "Pase atrás en el área",
+      id: "a06", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Pase atrás en el área",
       titulo: "Dentro del área, sin ángulo",
       situacion: "Entras al área por la izquierda. El central te cierra el ángulo de tiro y el portero cubre el primer palo. Tu interior derecho llega solo al punto penal.",
       pregunta: "¿Qué haces?",
@@ -132,7 +138,7 @@ window.TACTICA = {
       ideal: [[{ who: "ball", to: [87, 34] }], [{ who: "ball", to: [104, 36] }]]
     },
     {
-      id: "a07", fase: "ataque", tipo: "pase", principio: "Cambiar el ritmo",
+      id: "a07", posicion: "interior", fase: "ataque", tipo: "pase", principio: "Cambiar el ritmo",
       titulo: "Nada claro adelante",
       situacion: "Tienes el balón pero el lateral y el volante rival te cierran, y el 9 está tapado. El interior izquierdo queda libre detrás tuyo.",
       pregunta: "¿Qué haces?",
@@ -151,7 +157,7 @@ window.TACTICA = {
 
     // ---------------- ATAQUE SIN BALÓN ----------------
     {
-      id: "b01", fase: "ataque", tipo: "desmarque", principio: "Desmarque de ruptura",
+      id: "b01", posicion: "interior", fase: "ataque", tipo: "desmarque", principio: "Desmarque de ruptura",
       titulo: "El mediocentro tiene tiempo",
       situacion: "El mediocentro recibe sin presión y levanta la cabeza. El lateral rival te marca de cerca y la línea defensiva está alta.",
       pregunta: "¿A dónde corres para recibir?",
@@ -168,7 +174,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [86, 12] }, { who: "ball", to: [86, 12] }]]
     },
     {
-      id: "b02", fase: "ataque", tipo: "desmarque", principio: "Tercer hombre",
+      id: "b02", posicion: "interior", fase: "ataque", tipo: "desmarque", principio: "Tercer hombre",
       titulo: "El 9 baja a recibir",
       situacion: "El 9 baja a recibir del mediocentro y el central lo sigue. Detrás del 9 queda un espacio enorme.",
       pregunta: "¿A dónde corres?",
@@ -184,7 +190,7 @@ window.TACTICA = {
       ideal: [[{ who: "ball", to: [62, 32] }, { who: "you", to: [76, 24] }], [{ who: "ball", to: [86, 30] }, { who: "you", to: [86, 30] }]]
     },
     {
-      id: "b03", fase: "ataque", tipo: "desmarque", principio: "Ocupación del área",
+      id: "b03", posicion: "interior", fase: "ataque", tipo: "desmarque", principio: "Ocupación del área",
       titulo: "Centro desde la derecha",
       situacion: "El extremo derecho va a centrar. El 9 ataca el primer palo. El lateral rival que te marca está mirando el balón.",
       pregunta: "¿Dónde apareces en el área?",
@@ -201,7 +207,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [93, 24] }, { who: "ball", to: [94, 26] }]]
     },
     {
-      id: "b04", fase: "ataque", tipo: "desmarque", principio: "Apoyo",
+      id: "b04", posicion: "interior", fase: "ataque", tipo: "desmarque", principio: "Apoyo",
       titulo: "Tu lateral está presionado",
       situacion: "Tu lateral izquierdo tiene el balón en banda y el volante rival lo presiona. El lateral rival te marca de cerca.",
       pregunta: "¿Qué movimiento haces?",
@@ -217,7 +223,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [57, 21] }, { who: "ball", to: [57, 21] }]]
     },
     {
-      id: "b05", fase: "transicion", tipo: "desmarque", principio: "Transición ofensiva",
+      id: "b05", posicion: "interior", fase: "transicion", tipo: "desmarque", principio: "Transición ofensiva",
       titulo: "Recuperamos y el lateral rival quedó alto",
       situacion: "Tu mediocentro acaba de recuperar el balón. El lateral rival se había sumado al ataque y quedó muy adelantado.",
       pregunta: "¿A dónde corres?",
@@ -235,7 +241,7 @@ window.TACTICA = {
 
     // ---------------- DEFENSA Y TRANSICIÓN DEFENSIVA ----------------
     {
-      id: "d01", fase: "transicion", tipo: "presion", principio: "Contrapresión",
+      id: "d01", posicion: "interior", fase: "transicion", tipo: "presion", principio: "Contrapresión",
       titulo: "Acabamos de perder la pelota",
       situacion: "Tu lateral perdió el balón en campo rival. El volante rival lo recupera y aún no levantó la cabeza. Estás a 10 metros.",
       pregunta: "¿Qué haces?",
@@ -252,7 +258,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [66, 13] }], [{ who: "ball", to: [68, 18] }, { who: "you", to: [68, 17] }]]
     },
     {
-      id: "d02", fase: "defensa", tipo: "presion", principio: "Presión orientada",
+      id: "d02", posicion: "interior", fase: "defensa", tipo: "presion", principio: "Presión orientada",
       titulo: "El central rival sale jugando",
       situacion: "Bloque medio. El central derecho rival tiene el balón y su lateral está abierto en la banda. Tú eres el primero en presionar.",
       pregunta: "¿A dónde corres para presionar?",
@@ -269,7 +275,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [80, 20] }], [{ who: "ball", to: [70, 30] }, { who: "you", to: [84, 24] }]]
     },
     {
-      id: "d03", fase: "defensa", tipo: "ubicacion", principio: "Cobertura y basculación",
+      id: "d03", posicion: "interior", fase: "defensa", tipo: "ubicacion", principio: "Cobertura y basculación",
       titulo: "Tu lateral salió a presionar",
       situacion: "El lateral rival recibe en banda y tu lateral izquierdo sale a cerrarlo. El volante rival se mete en el espacio interior que quedó libre.",
       pregunta: "¿Dónde te ubicas?",
@@ -286,7 +292,7 @@ window.TACTICA = {
       ideal: [[{ who: "you", to: [46, 20] }], [{ who: "R:VD", to: [40, 22] }, { who: "you", to: [42, 22] }]]
     },
     {
-      id: "d04", fase: "defensa", tipo: "ubicacion", principio: "Repliegue",
+      id: "d04", posicion: "interior", fase: "defensa", tipo: "ubicacion", principio: "Repliegue",
       titulo: "El rival cambió de lado",
       situacion: "El rival cambia de orientación hacia tu banda. Su lateral derecho recibe solo y tu lateral está a 15 metros de él.",
       pregunta: "¿Qué haces?",
