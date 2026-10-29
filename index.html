@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lectura de juego — Interior izquierdo</title>
+<meta name="theme-color" content="#0f1412">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lectura de juego">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1412; --card: #1a221d; --card2: #222d26; --line: #2f3c34;
+    --txt: #eef3ef; --muted: #9aa89f; --accent: #ffd23f; --accent2: #2bd47d;
+    --red: #ff5a5f; --amber: #ffb02e; --blue: #5fb5ff;
+    --s3: #2bd47d; --s2: #9ddc4a; --s1: #ffb02e; --s0: #ff5a5f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--txt); font-family: Inter, system-ui, sans-serif; }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .app { max-width: 560px; margin: 0 auto; padding: 14px 14px 40px; }
+  h1, h2, h3, .big { font-family: "Barlow Condensed", Inter, sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+  h1 { font-size: 34px; font-weight: 800; line-height: 1; }
+  h2 { font-size: 22px; font-weight: 800; }
+  h3 { font-size: 18px; font-weight: 700; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 12px; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .grow { flex: 1; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; background: var(--card2); color: var(--txt); }
+  button.primary { background: var(--accent); color: #141414; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .4; cursor: default; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .mode { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: left; }
+  .mode b { display: block; font-family: "Barlow Condensed"; font-size: 20px; text-transform: uppercase; }
+  .mode span { color: var(--muted); font-size: 13px; font-weight: 400; display: block; margin-top: 4px; }
+  .mode.partido b { color: var(--accent); }
+  .mode.entreno b { color: var(--accent2); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .stat .big { font-size: 26px; font-weight: 800; color: var(--accent); }
+  .stat small { color: var(--muted); font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+  .chip.on { background: var(--card2); color: var(--txt); border-color: var(--accent2); }
+  .hidden { display: none !important; }
+
+  /* juego */
+  .topbar { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+  .tag.ataque { background: #1d3b2a; color: var(--accent2); }
+  .tag.defensa { background: #3b1d22; color: var(--red); }
+  .tag.transicion { background: #3b2e1d; color: var(--amber); }
+  .timerwrap { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .timer { height: 100%; width: 100%; background: var(--accent); transition: width .1s linear; }
+  .timer.low { background: var(--red); }
+  .pitchwrap { margin-top: 10px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+  svg.pitch { display: block; width: 100%; touch-action: manipulation; user-select: none; }
+  .pitchwrap .hint { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; color: #cfe6d4; background: rgba(0,0,0,.35); padding: 3px; }
+  .question { font-size: 17px; font-weight: 700; margin-top: 12px; line-height: 1.3; }
+  .situ { color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.45; }
+  .pista { margin-top: 8px; font-size: 14px; color: var(--blue); }
+  .feedback { margin-top: 12px; border-radius: 14px; padding: 14px; border: 1px solid var(--line); background: var(--card); }
+  .feedback .score { font-family: "Barlow Condensed"; font-size: 24px; font-weight: 800; text-transform: uppercase; }
+  .feedback.s3 .score { color: var(--s3); } .feedback.s2 .score { color: var(--s2); }
+  .feedback.s1 .score { color: var(--s1); } .feedback.s0 .score { color: var(--s0); }
+  .feedback p { margin: 8px 0 0; font-size: 15px; line-height: 1.45; }
+  .principio { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 10px; }
+  .actions { display: flex; gap: 10px; margin-top: 12px; }
+  .actions button { flex: 1; }
+  .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  .streak { color: var(--accent); font-weight: 700; }
+
+  /* resumen */
+  .ring { width: 130px; height: 130px; margin: 10px auto; position: relative; }
+  .ring .big { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800; }
+  .list { margin-top: 10px; }
+  .item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .item:last-child { border-bottom: 0; }
+  .item span:last-child { text-align: right; margin-left: 12px; flex-shrink: 0; max-width: 45%; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .bar div { height: 100%; background: var(--accent2); }
+  @keyframes pulse { 0% { r: 3.2; opacity: .9; } 100% { r: 6; opacity: 0; } }
+  .youring { animation: pulse 1.4s ease-out infinite; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .feedback { animation: pop .2s ease-out; transform-origin: top center; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- INICIO -->
+  <section id="home">
+    <h1>Lectura de juego</h1>
+    <div class="sub" id="homeSub">Interior izquierdo · 4-3-3</div>
+
+    <div class="stats">
+      <div class="stat"><div class="big" id="stIQ">—</div><small>IQ táctico</small></div>
+      <div class="stat"><div class="big" id="stAtaque">—</div><small>Ataque</small></div>
+      <div class="stat"><div class="big" id="stDefensa">—</div><small>Defensa</small></div>
+    </div>
+
+    <div class="modes">
+      <button class="mode entreno" onclick="startSession('entreno')">
+        <b>Entrenamiento</b>
+        <span>Sin tiempo, con pistas. Aprende cada principio.</span>
+      </button>
+      <button class="mode partido" onclick="startSession('partido')">
+        <b>Partido</b>
+        <span>10 jugadas, 1 minuto cada una. Decide rápido.</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>Filtrar entrenamiento</h3>
+      <div class="chips" id="filtros">
+        <button class="chip on" data-f="todo">Todo</button>
+        <button class="chip" data-f="ataque">Ataque</button>
+        <button class="chip" data-f="defensa">Defensa</button>
+        <button class="chip" data-f="transicion">Transición</button>
+        <button class="chip" data-f="fallados">Las que fallé</button>
+      </div>
+      <div class="sub" id="countInfo"></div>
+    </div>
+
+    <div class="card">
+      <h3>Cómo se juega</h3>
+      <div class="situ">Ves una foto del partido desde arriba. Atacas hacia la <b>derecha</b>; tu banda izquierda está <b>arriba</b>. Tú eres el jugador amarillo. Lee la situación y <b>toca en la cancha</b>: a quién le pasas, a qué espacio corres o dónde te ubicas. Casi nunca hay una sola respuesta correcta: cada decisión tiene un puntaje y una explicación.</div>
+      <div class="legend">
+        <span><i style="background:#ffd23f"></i>Tú</span>
+        <span><i style="background:#e8f4ff"></i>Tu equipo</span>
+        <span><i style="background:#e63946"></i>Rival</span>
+        <span><i style="background:#fff;border:1px solid #000"></i>Balón</span>
+      </div>
+    </div>
+    <div class="sub" style="text-align:center;margin-top:16px;font-size:12px" id="verInfo"></div>
+  </section>
+
+  <!-- JUEGO -->
+  <section id="play" class="hidden">
+    <div class="topbar">
+      <span id="progress">1 / 10</span>
+      <span id="tags"></span>
+      <span id="pts"></span>
+    </div>
+    <div class="timerwrap" id="timerwrap"><div class="timer" id="timer"></div></div>
+
+    <div class="pitchwrap">
+      <svg class="pitch" id="pitch" viewBox="-2 -2 109 72" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="hint" id="pitchHint">Toca en la cancha para decidir</div>
+    </div>
+
+    <h3 style="margin-top:12px" id="titulo"></h3>
+    <div class="situ" id="situacion"></div>
+    <div class="question" id="pregunta"></div>
+    <div class="pista hidden" id="pista"></div>
+    <div class="row" style="margin-top:10px" id="preActions">
+      <button class="ghost" id="btnPista" onclick="showHint()">Dame una pista</button>
+      <div class="grow"></div>
+      <button class="ghost" onclick="goHome()">Salir</button>
+    </div>
+
+    <div class="feedback hidden" id="feedback">
+      <div class="score" id="fbScore"></div>
+      <p id="fbTxt"></p>
+      <div class="principio" id="fbPrincipio"></div>
+      <div class="actions">
+        <button id="btnIdeal" onclick="playIdeal()">Ver la jugada ideal</button>
+        <button class="primary" id="btnNext" onclick="nextScenario()">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section id="summary" class="hidden">
+    <h2 id="sumTitle">Fin de la sesión</h2>
+    <div class="card" style="text-align:center">
+      <div class="ring"><svg viewBox="0 0 100 100" width="130" height="130"><circle cx="50" cy="50" r="42" fill="none" stroke="#2f3c34" stroke-width="10"/><circle id="ringArc" cx="50" cy="50" r="42" fill="none" stroke="#ffd23f" stroke-width="10" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 264"/></svg><div class="big" id="sumPct">0%</div></div>
+      <div class="sub" id="sumDetail"></div>
+    </div>
+    <div class="card">
+      <h3>Por fase</h3>
+      <div id="sumFases"></div>
+    </div>
+    <div class="card">
+      <h3>Jugada por jugada</h3>
+      <div class="list" id="sumList"></div>
+    </div>
+    <div class="actions">
+      <button id="btnRetry" onclick="retryFailed()">Repetir las falladas</button>
+      <button class="primary" onclick="goHome()">Inicio</button>
+    </div>
+  </section>
+</div>
+
+<script src="scenarios.js"></script>
+<script>
+(function () {
+  const D = window.TACTICA;
+  const ALL = D.scenarios;
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+
+  // ---------- progreso persistente (best score por escenario) ----------
+  const KEY = "tactica_ii_v1";
+  let progress = { best: {}, played: 0 };
+  try { const raw = localStorage.getItem(KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
+  function saveProgress() { try { localStorage.setItem(KEY, JSON.stringify(progress)); } catch (e) {} }
+
+  // ---------- estado de sesión ----------
+  let session = null; // { mode, list, idx, results:[], streak, bestStreak }
+  let current = null; // escenario actual
+  let answered = false;
+  let timerId = null, timerStart = 0;
+  const TIME_LIMIT = 60000;
+  let filter = "todo";
+  let positions = {}; // posiciones actuales dibujadas (para animación)
+
+  // ---------- inicio ----------
+  function pct(list) {
+    const ids = list.filter(s => progress.best[s.id] !== undefined);
+    if (!ids.length) return null;
+    const sum = ids.reduce((a, s) => a + progress.best[s.id], 0);
+    return Math.round(100 * sum / (3 * ids.length));
+  }
+  function fmt(p) { return p === null ? "—" : p + "%"; }
+  function renderHome() {
+    $("homeSub").textContent = D.posicion + " · " + D.sistema;
+    $("stIQ").textContent = fmt(pct(ALL));
+    $("stAtaque").textContent = fmt(pct(ALL.filter(s => s.fase === "ataque")));
+    $("stDefensa").textContent = fmt(pct(ALL.filter(s => s.fase !== "ataque")));
+    const n = filteredList().length;
+    const seen = ALL.filter(s => progress.best[s.id] !== undefined).length;
+    $("countInfo").textContent = n + " escenarios en este filtro · " + seen + " de " + ALL.length + " jugados";
+    $("verInfo").textContent = "Prototipo · " + ALL.length + " escenarios · " + D.posicion;
+  }
+  function filteredList() {
+    if (filter === "todo") return ALL.slice();
+    if (filter === "fallados") return ALL.filter(s => progress.best[s.id] !== undefined && progress.best[s.id] < 3);
+    return ALL.filter(s => s.fase === filter);
+  }
+  document.querySelectorAll("#filtros .chip").forEach(ch => ch.addEventListener("click", () => {
+    document.querySelectorAll("#filtros .chip").forEach(c => c.classList.remove("on"));
+    ch.classList.add("on"); filter = ch.dataset.f; renderHome();
+  }));
+
+  function show(id) { ["home", "play", "summary"].forEach(s => $(s).classList.toggle("hidden", s !== id)); window.scrollTo(0, 0); }
+  window.goHome = function () { stopTimer(); renderHome(); show("home"); };
+
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  window.startSession = function (mode, list) {
+    let l = list;
+    if (!l) {
+      l = mode === "partido" ? shuffle(ALL.slice()).slice(0, 10) : filteredList();
+    }
+    if (!l.length) { $("countInfo").textContent = "No hay escenarios en este filtro todavía. ¡Juega primero!"; return; }
+    session = { mode, list: l, idx: 0, results: [], streak: 0, bestStreak: 0 };
+    show("play");
+    loadScenario();
+  };
+
+  // ---------- cancha ----------
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function drawPitch(svg) {
+    svg.innerHTML = "";
+    const g = el("g", { id: "field" }, svg);
+    el("rect", { x: -2, y: -2, width: 109, height: 72, fill: "#2e7d46" }, g);
+    for (let i = 0; i < 7; i++) el("rect", { x: i * 15, y: 0, width: 15, height: 68, fill: i % 2 ? "#2f8349" : "#2a7641" }, g);
+    const L = { fill: "none", stroke: "#dfeee3", "stroke-width": .5, "stroke-opacity": .85 };
+    el("rect", Object.assign({ x: 0, y: 0, width: 105, height: 68 }, L), g);
+    el("line", Object.assign({ x1: 52.5, y1: 0, x2: 52.5, y2: 68 }, L), g);
+    el("circle", Object.assign({ cx: 52.5, cy: 34, r: 9.15 }, L), g);
+    el("rect", Object.assign({ x: 0, y: 13.84, width: 16.5, height: 40.32 }, L), g);
+    el("rect", Object.assign({ x: 88.5, y: 13.84, width: 16.5, height: 40.32 }, L), g);
+    el("rect", Object.assign({ x: 0, y: 24.84, width: 5.5, height: 18.32 }, L), g);
+    el("rect", Object.assign({ x: 99.5, y: 24.84, width: 5.5, height: 18.32 }, L), g);
+    el("circle", { cx: 11, cy: 34, r: .6, fill: "#dfeee3" }, g);
+    el("circle", { cx: 94, cy: 34, r: .6, fill: "#dfeee3" }, g);
+    el("rect", { x: -2, y: 30.34, width: 2, height: 7.32, fill: "#eee" }, g);
+    el("rect", { x: 105, y: 30.34, width: 2, height: 7.32, fill: "#eee" }, g);
+    // etiquetas de orientación
+    const t = el("text", { x: 2, y: -0.4, "font-size": 2.3, fill: "#cfe6d4", "font-family": "Inter, sans-serif" }, g); t.textContent = "Banda izquierda";
+    const t2 = el("text", { x: 103, y: -0.4, "font-size": 2.3, fill: "#cfe6d4", "text-anchor": "end", "font-family": "Inter, sans-serif" }, g); t2.textContent = "Atacas hacia la derecha →";
+    el("g", { id: "zones" }, svg);
+    el("g", { id: "trail" }, svg);
+    el("g", { id: "players" }, svg);
+    el("g", { id: "marker" }, svg);
+  }
+  function player(parent, key, x, y, kind, label) {
+    const g = el("g", { "data-key": key, transform: "translate(" + x + " " + y + ")" }, parent);
+    if (kind === "you") {
+      el("circle", { r: 3.2, fill: "none", stroke: "#ffd23f", "stroke-width": .6, class: "youring" }, g);
+      el("circle", { r: 2.8, fill: "#ffd23f", stroke: "#1a1a1a", "stroke-width": .5 }, g);
+      const t = el("text", { y: .9, "text-anchor": "middle", "font-size": 2.4, "font-weight": 700, fill: "#1a1a1a", "font-family": "Inter, sans-serif" }, g); t.textContent = "TÚ";
+    } else if (kind === "team") {
+      el("circle", { r: 2.4, fill: "#e8f4ff", stroke: "#0d3b66", "stroke-width": .5 }, g);
+      const t = el("text", { y: .8, "text-anchor": "middle", "font-size": 2, "font-weight": 700, fill: "#0d3b66", "font-family": "Inter, sans-serif" }, g); t.textContent = label;
+    } else {
+      el("circle", { r: 2.4, fill: "#e63946", stroke: "#5a0c12", "stroke-width": .5 }, g);
+    }
+    return g;
+  }
+  function renderScenario(s) {
+    const svg = $("pitch");
+    drawPitch(svg);
+    const P = $("players");
+    positions = {};
+    const team = Object.assign({}, D.base.team, s.team || {});
+    const rivals = Object.assign({}, D.base.rivals, s.rivals || {});
+    for (const k in rivals) { positions["R:" + k] = rivals[k].slice(); player(P, "R:" + k, rivals[k][0], rivals[k][1], "rival"); }
+    for (const k in team) { positions["T:" + k] = team[k].slice(); player(P, "T:" + k, team[k][0], team[k][1], "team", k); }
+    positions.you = s.you.slice(); player(P, "you", s.you[0], s.you[1], "you");
+    let ball = s.ball.slice();
+    if (Math.hypot(ball[0] - s.you[0], ball[1] - s.you[1]) < 3) ball = [s.you[0] + 2.6, s.you[1] + 1.8];
+    positions.ball = ball;
+    const b = el("g", { "data-key": "ball", transform: "translate(" + ball[0] + " " + ball[1] + ")" }, P);
+    el("circle", { r: 1.3, fill: "#fff", stroke: "#111", "stroke-width": .4 }, b);
+  }
+  const zoneColor = { 3: "#2bd47d", 2: "#9ddc4a", 1: "#ffb02e", 0: "#ff5a5f" };
+  function revealZones(s, chosen) {
+    const Z = $("zones"); Z.innerHTML = "";
+    s.zones.forEach(z => {
+      const isChosen = chosen && chosen === z;
+      el("circle", { cx: z.c[0], cy: z.c[1], r: z.r, fill: zoneColor[z.score], "fill-opacity": isChosen ? .45 : .22, stroke: zoneColor[z.score], "stroke-width": isChosen ? .9 : .4, "stroke-dasharray": isChosen ? "" : "1.5 1" }, Z);
+      let ly = z.c[1] - z.r - .8; if (ly < 1.5) ly = z.c[1] + z.r + 2.6;
+      const lx = Math.min(98, Math.max(7, z.c[0]));
+      const t = el("text", { x: lx, y: ly, "text-anchor": "middle", "font-size": 2.2, "font-weight": 700, fill: "#fff", stroke: "#000", "stroke-width": .25, "paint-order": "stroke", "font-family": "Inter, sans-serif" }, Z);
+      t.textContent = D.scoreLabels[z.score];
+    });
+  }
+  function drawMarker(x, y) {
+    const M = $("marker"); M.innerHTML = "";
+    el("circle", { cx: x, cy: y, r: 2.2, fill: "none", stroke: "#fff", "stroke-width": .7 }, M);
+    el("line", { x1: x - 1.2, y1: y - 1.2, x2: x + 1.2, y2: y + 1.2, stroke: "#fff", "stroke-width": .6 }, M);
+    el("line", { x1: x + 1.2, y1: y - 1.2, x2: x - 1.2, y2: y + 1.2, stroke: "#fff", "stroke-width": .6 }, M);
+  }
+  function svgPoint(evt) {
+    const svg = $("pitch");
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return [p.x, p.y];
+  }
+  $("pitch").addEventListener("pointerdown", evt => {
+    if (answered || !current) return;
+    const [x, y] = svgPoint(evt);
+    if (x < -2 || y < -2 || x > 107 || y > 70) return;
+    answer(x, y);
+  });
+
+  // ---------- carga y respuesta ----------
+  function loadScenario() {
+    current = session.list[session.idx];
+    answered = false;
+    renderScenario(current);
+    $("progress").textContent = (session.idx + 1) + " / " + session.list.length;
+    $("tags").innerHTML = '<span class="tag ' + current.fase + '">' + current.fase + "</span>";
+    $("pts").innerHTML = session.mode === "partido"
+      ? (session.streak >= 2 ? '<span class="streak">🔥 ' + session.streak + "</span> · " : "") + sumPoints() + " pts"
+      : sumPoints() + " pts";
+    $("titulo").textContent = current.titulo;
+    $("situacion").textContent = current.situacion;
+    $("pregunta").textContent = current.pregunta;
+    $("pista").textContent = current.pista; $("pista").classList.add("hidden");
+    $("feedback").classList.add("hidden");
+    $("preActions").classList.remove("hidden");
+    $("btnPista").classList.toggle("hidden", session.mode === "partido");
+    $("pitchHint").textContent = current.tipo === "pase" ? "Toca al compañero o al espacio donde juegas el pase" : current.tipo === "conduccion" ? "Toca a dónde conduces o a quién pasas" : "Toca el lugar de la cancha a donde vas";
+    $("pitchHint").classList.remove("hidden");
+    if (session.mode === "partido") startTimer(); else { $("timerwrap").classList.add("hidden"); }
+  }
+  function sumPoints() { return session.results.reduce((a, r) => a + r.score, 0); }
+  window.showHint = function () { $("pista").classList.remove("hidden"); };
+
+  function startTimer() {
+    $("timerwrap").classList.remove("hidden");
+    const bar = $("timer"); bar.style.width = "100%"; bar.classList.remove("low");
+    timerStart = performance.now();
+    stopTimer();
+    timerId = setInterval(() => {
+      const left = Math.max(0, TIME_LIMIT - (performance.now() - timerStart));
+      bar.style.width = (100 * left / TIME_LIMIT) + "%";
+      if (left < 10000) bar.classList.add("low");
+      if (left <= 0) { stopTimer(); answer(null, null); }
+    }, 100);
+  }
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+  function answer(x, y) {
+    if (answered) return;
+    answered = true; stopTimer();
+    let best = null;
+    if (x !== null) {
+      current.zones.forEach(z => {
+        const d = Math.hypot(x - z.c[0], y - z.c[1]);
+        if (d <= z.r && (!best || z.score > best.score)) best = z;
+      });
+      drawMarker(x, y);
+    }
+    const timeout = x === null;
+    const score = timeout ? 0 : (best ? best.score : 0);
+    const txt = timeout ? "Se acabó el tiempo. En el partido, decidir tarde es lo mismo que no decidir: el rival ya te cerró." : (best ? best.txt : current.miss);
+    session.results.push({ id: current.id, score, zone: best });
+    if (score === 3) { session.streak++; session.bestStreak = Math.max(session.bestStreak, session.streak); } else session.streak = 0;
+    const prev = progress.best[current.id];
+    if (prev === undefined || score > prev) progress.best[current.id] = score;
+    progress.played++; saveProgress();
+
+    revealZones(current, best);
+    const fb = $("feedback");
+    fb.className = "feedback s" + score;
+    $("fbScore").textContent = (timeout ? "Sin tiempo" : D.scoreLabels[score]) + " · +" + score;
+    $("fbTxt").textContent = txt;
+    $("fbPrincipio").textContent = "Principio: " + current.principio;
+    $("btnNext").textContent = session.idx + 1 < session.list.length ? "Siguiente" : "Ver resumen";
+    $("btnIdeal").disabled = false;
+    $("preActions").classList.add("hidden");
+    $("pitchHint").classList.add("hidden");
+    fb.classList.remove("hidden");
+    $("pts").textContent = sumPoints() + " pts";
+    setTimeout(() => fb.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
+  }
+
+  window.nextScenario = function () {
+    session.idx++;
+    if (session.idx >= session.list.length) showSummary(); else loadScenario();
+  };
+
+  // ---------- animación de la jugada ideal ----------
+  let animating = false;
+  window.playIdeal = function () {
+    if (animating || !current.ideal) return;
+    animating = true; $("btnIdeal").disabled = true;
+    renderScenario(current); revealZones(current, null); $("trail").innerHTML = "";
+    const steps = current.ideal;
+    let i = 0;
+    const runStep = () => {
+      if (i >= steps.length) { animating = false; $("btnIdeal").disabled = false; $("btnIdeal").textContent = "Ver otra vez"; return; }
+      const moves = steps[i].map(m => ({ key: m.who, from: positions[m.who].slice(), to: m.to }));
+      moves.forEach(m => { if (m.key === "ball") {
+        el("line", { x1: m.from[0], y1: m.from[1], x2: m.to[0], y2: m.to[1], stroke: "#fff", "stroke-width": .5, "stroke-dasharray": "1.5 1", "stroke-opacity": .8 }, $("trail"));
+      } else {
+        el("line", { x1: m.from[0], y1: m.from[1], x2: m.to[0], y2: m.to[1], stroke: m.key === "you" ? "#ffd23f" : (m.key[0] === "R" ? "#ff8a8a" : "#bfe0ff"), "stroke-width": .4, "stroke-opacity": .7 }, $("trail"));
+      } });
+      const dur = 900, t0 = performance.now();
+      const frame = now => {
+        let k = Math.min(1, (now - t0) / dur); k = k < .5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
+        moves.forEach(m => {
+          const x = m.from[0] + (m.to[0] - m.from[0]) * k, y = m.from[1] + (m.to[1] - m.from[1]) * k;
+          const g = $("players").querySelector('[data-key="' + m.key + '"]');
+          if (g) g.setAttribute("transform", "translate(" + x + " " + y + ")");
+        });
+        if (k < 1) requestAnimationFrame(frame);
+        else { moves.forEach(m => { positions[m.key] = m.to.slice(); }); i++; setTimeout(runStep, 350); }
+      };
+      requestAnimationFrame(frame);
+    };
+    runStep();
+  };
+
+  // ---------- resumen ----------
+  function showSummary() {
+    stopTimer();
+    const r = session.results, max = 3 * r.length, got = sumPoints();
+    const p = Math.round(100 * got / max);
+    show("summary");
+    $("sumTitle").textContent = session.mode === "partido" ? "Fin del partido" : "Fin del entrenamiento";
+    $("sumPct").textContent = p + "%";
+    $("ringArc").setAttribute("stroke-dasharray", (264 * p / 100) + " 264");
+    const opt = r.filter(x => x.score === 3).length;
+    $("sumDetail").textContent = got + " de " + max + " puntos · " + opt + " decisiones óptimas" + (session.mode === "partido" ? " · mejor racha: " + session.bestStreak : "");
+    const fases = ["ataque", "defensa", "transicion"]; const nombres = { ataque: "Ataque", defensa: "Defensa", transicion: "Transición" };
+    $("sumFases").innerHTML = fases.map(f => {
+      const rs = r.filter((x, i) => session.list[i].fase === f);
+      if (!rs.length) return "";
+      const pf = Math.round(100 * rs.reduce((a, x) => a + x.score, 0) / (3 * rs.length));
+      return '<div style="margin-top:10px;font-size:14px"><div class="row"><span class="grow">' + nombres[f] + "</span><span>" + pf + "%</span></div><div class=\"bar\"><div style=\"width:" + pf + '%"></div></div></div>';
+    }).join("");
+    $("sumList").innerHTML = r.map((x, i) => {
+      const s = session.list[i];
+      return '<div class="item"><span><i class="dot" style="background:' + zoneColor[x.score] + '"></i>' + s.titulo + '</span><span style="color:var(--muted)">' + s.principio + " · " + x.score + "</span></div>";
+    }).join("");
+    const failed = session.list.filter((s, i) => r[i].score < 3);
+    $("btnRetry").classList.toggle("hidden", failed.length === 0);
+    session.failed = failed;
+  }
+  window.retryFailed = function () { startSession("entreno", session.failed); };
+
+  renderHome();
+  try { if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}
+})();
+</script>
+</body>
+</html>
