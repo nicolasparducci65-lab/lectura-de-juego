@@ -1,5 +1,5 @@
 {
-  "name": "Lectura de juego — Interior izquierdo",
+  "name": "Lectura de juego — Táctica por posición",
   "short_name": "Lectura de juego",
   "start_url": "./index.html",
   "scope": "./",

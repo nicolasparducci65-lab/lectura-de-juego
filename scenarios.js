@@ -17,10 +17,21 @@
 window.TACTICA = {
   sistema: "4-3-3",
   // Posiciones jugables. "rol" es la ficha de la formación base que el jugador reemplaza.
+  //  Las posiciones "-der" se generan en scenarios-espejo.js a partir de las izquierdas.
   posiciones: [
-    { id: "interior", nombre: "Interior izquierdo", rol: "EI", desc: "Extremo que juega por dentro" },
-    { id: "extremo", nombre: "Extremo izquierdo", rol: "EI", desc: "Pegado a la banda, encara y centra" },
-    { id: "lateral", nombre: "Lateral izquierdo", rol: "LI", desc: "Defiende la banda y se suma al ataque" }
+    { id: "portero", linea: "Arquero", nombre: "Portero", rol: "POR", desc: "Último defensor y primer atacante" },
+    { id: "lateral", linea: "Defensa", nombre: "Lateral izq.", rol: "LI", desc: "Defiende la banda y se suma al ataque" },
+    { id: "central", linea: "Defensa", nombre: "Central izq.", rol: "DCI", desc: "Manda la línea y sale jugando" },
+    { id: "central-der", linea: "Defensa", nombre: "Central der.", rol: "DCD", desc: "Manda la línea y sale jugando" },
+    { id: "lateral-der", linea: "Defensa", nombre: "Lateral der.", rol: "LD", desc: "Defiende la banda y se suma al ataque" },
+    { id: "pivote", linea: "Medio", nombre: "Pivote", rol: "MCD", desc: "Mediocentro defensivo: equilibrio y salida" },
+    { id: "volante", linea: "Medio", nombre: "Volante izq.", rol: "MI", desc: "Interior de medio campo: llegada y pases" },
+    { id: "volante-der", linea: "Medio", nombre: "Volante der.", rol: "MD", desc: "Interior de medio campo: llegada y pases" },
+    { id: "interior", linea: "Ataque", nombre: "Interior izq.", rol: "EI", desc: "Extremo que juega por dentro" },
+    { id: "extremo", linea: "Ataque", nombre: "Extremo izq.", rol: "EI", desc: "Pegado a la banda, encara y centra" },
+    { id: "delantero", linea: "Ataque", nombre: "Delantero centro", rol: "DC", desc: "El 9: desmarques, presión y gol" },
+    { id: "extremo-der", linea: "Ataque", nombre: "Extremo der.", rol: "ED", desc: "Pegado a la banda, encara y centra" },
+    { id: "interior-der", linea: "Ataque", nombre: "Interior der.", rol: "ED", desc: "Extremo que juega por dentro" }
   ],
   base: {
     team: {

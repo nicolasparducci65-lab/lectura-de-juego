@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lectura de juego — Interior izquierdo</title>
+<title>Lectura de juego — Táctica por posición</title>
 <meta name="theme-color" content="#0f1412">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -50,6 +50,9 @@
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .chip { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
   .chip.on { background: var(--card2); color: var(--txt); border-color: var(--accent2); }
+  .linea { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+  .lineaLbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; width: 58px; flex-shrink: 0; padding-top: 9px; }
+  .linea .chips { margin-top: 0; }
   .hidden { display: none !important; }
 
   /* juego */
@@ -63,7 +66,7 @@
   .timer.low { background: var(--red); }
   .pitchwrap { margin-top: 10px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); position: relative; }
   svg.pitch { display: block; width: 100%; touch-action: manipulation; user-select: none; }
-  .pitchwrap .hint { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; color: #cfe6d4; background: rgba(0,0,0,.35); padding: 3px; }
+  .pitchwrap .hint { pointer-events: none; position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; color: #cfe6d4; background: rgba(0,0,0,.35); padding: 3px; }
   .question { font-size: 17px; font-weight: 700; margin-top: 12px; line-height: 1.3; }
   .situ { color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.45; }
   .pista { margin-top: 8px; font-size: 14px; color: var(--blue); }
@@ -102,7 +105,7 @@
   <section id="home">
     <h1>Lectura de juego</h1>
     <div class="sub" id="homeSub">Elige tu posición · 4-3-3</div>
-    <div class="chips" id="posiciones"></div>
+    <div id="posiciones" style="margin-top:12px"></div>
 
     <div class="stats">
       <div class="stat"><div class="big" id="stIQ">—</div><small>IQ táctico</small></div>
@@ -135,7 +138,7 @@
 
     <div class="card">
       <h3>Cómo se juega</h3>
-      <div class="situ">Ves una foto del partido desde arriba. Atacas hacia la <b>derecha</b>; tu banda izquierda está <b>arriba</b>. Tú eres el jugador amarillo (la posición que elegiste arriba). Lee la situación y <b>toca en la cancha</b>: a quién le pasas, a qué espacio corres o dónde te ubicas. Casi nunca hay una sola respuesta correcta: cada decisión tiene un puntaje y una explicación.</div>
+      <div class="situ">Ves una foto del partido desde arriba. Tu equipo ataca hacia la <b>derecha</b>; la banda izquierda está <b>arriba</b>. Tú eres el jugador amarillo (la posición que elegiste arriba). Lee la situación y <b>toca en la cancha</b>: a quién le pasas, a qué espacio corres o dónde te ubicas. Casi nunca hay una sola respuesta correcta: cada decisión tiene un puntaje y una explicación.</div>
       <div class="legend">
         <span><i style="background:#ffd23f"></i>Tú</span>
         <span><i style="background:#e8f4ff"></i>Tu equipo</span>
@@ -207,6 +210,12 @@
 <script src="scenarios.js"></script>
 <script src="scenarios-extremo.js"></script>
 <script src="scenarios-lateral.js"></script>
+<script src="scenarios-portero.js"></script>
+<script src="scenarios-central.js"></script>
+<script src="scenarios-pivote.js"></script>
+<script src="scenarios-volante.js"></script>
+<script src="scenarios-delantero.js"></script>
+<script src="scenarios-espejo.js"></script>
 <script>
 (function () {
   const D = window.TACTICA;
@@ -228,6 +237,7 @@
   let current = null; // escenario actual
   let answered = false;
   let timerId = null, timerStart = 0;
+  let animating = false, animToken = 0;
   const TIME_LIMIT = 60000;
   let filter = "todo";
   let positions = {}; // posiciones actuales dibujadas (para animación)
@@ -242,7 +252,9 @@
   function fmt(p) { return p === null ? "—" : p + "%"; }
   function renderHome() {
     $("homeSub").textContent = pos.desc + " · " + D.sistema;
-    $("posiciones").innerHTML = D.posiciones.map(p => '<button class="chip' + (p.id === pos.id ? " on" : "") + '" data-p="' + p.id + '">' + p.nombre + "</button>").join("");
+    const lineas = []; D.posiciones.forEach(p => { if (!lineas.includes(p.linea)) lineas.push(p.linea); });
+    $("posiciones").innerHTML = lineas.map(l => '<div class="linea"><span class="lineaLbl">' + l + '</span><div class="chips">' +
+      D.posiciones.filter(p => p.linea === l).map(p => '<button class="chip' + (p.id === pos.id ? " on" : "") + '" data-p="' + p.id + '">' + p.nombre + "</button>").join("") + "</div></div>").join("");
     $("posiciones").querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", () => { setPos(D.posiciones.find(p => p.id === ch.dataset.p)); renderHome(); }));
     $("stIQ").textContent = fmt(pct(ALL));
     $("stAtaque").textContent = fmt(pct(ALL.filter(s => s.fase === "ataque")));
@@ -384,7 +396,8 @@
     $("pts").innerHTML = session.mode === "partido"
       ? (session.streak >= 2 ? '<span class="streak">🔥 ' + session.streak + "</span> · " : "") + sumPoints() + " pts"
       : sumPoints() + " pts";
-    $("titulo").textContent = current.titulo;
+    $("titulo").textContent = current.titulo; $("titulo").dataset.id = current.id;
+    animToken++; animating = false;
     $("situacion").textContent = current.situacion;
     $("pregunta").textContent = current.pregunta;
     $("pista").textContent = current.pista; $("pista").classList.add("hidden");
@@ -453,14 +466,15 @@
   };
 
   // ---------- animación de la jugada ideal ----------
-  let animating = false;
   window.playIdeal = function () {
     if (animating || !current.ideal) return;
     animating = true; $("btnIdeal").disabled = true;
+    const myToken = animToken;
     renderScenario(current); revealZones(current, null); $("trail").innerHTML = "";
     const steps = current.ideal;
     let i = 0;
     const runStep = () => {
+      if (myToken !== animToken) return;
       if (i >= steps.length) { animating = false; $("btnIdeal").disabled = false; $("btnIdeal").textContent = "Ver otra vez"; return; }
       const moves = steps[i].map(m => ({ key: m.who, from: positions[m.who].slice(), to: m.to }));
       moves.forEach(m => { if (m.key === "ball") {
@@ -470,6 +484,7 @@
       } });
       const dur = 900, t0 = performance.now();
       const frame = now => {
+        if (myToken !== animToken) return;
         let k = Math.min(1, (now - t0) / dur); k = k < .5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
         moves.forEach(m => {
           const x = m.from[0] + (m.to[0] - m.from[0]) * k, y = m.from[1] + (m.to[1] - m.from[1]) * k;
